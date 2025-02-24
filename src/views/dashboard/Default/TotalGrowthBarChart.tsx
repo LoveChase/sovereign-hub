@@ -1,10 +1,8 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
 
 // material-ui
 import { useTheme } from '@mui/material/styles';
 import Grid from '@mui/material/Grid';
-import MenuItem from '@mui/material/MenuItem';
-import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 // third-party
@@ -12,61 +10,93 @@ import ApexCharts from 'apexcharts';
 import Chart from 'react-apexcharts';
 
 // project imports
-import useConfig from 'hooks/useConfig';
-import SkeletonTotalGrowthBarChart from 'ui-component/cards/Skeleton/TotalGrowthBarChart';
 import MainCard from 'ui-component/cards/MainCard';
 import { gridSpacing } from 'store/constant';
+import SkeletonTotalGrowthBarChart from 'ui-component/cards/Skeleton/TotalGrowthBarChart';
 
 // types
 import { ThemeMode } from 'types/config';
 
-// chart data
-import chartData from './chart-data/total-growth-bar-chart';
-
-const status = [
-    {
-        value: 'today',
-        label: 'Today'
-    },
-    {
-        value: 'month',
-        label: 'This Month'
-    },
-    {
-        value: 'year',
-        label: 'This Year'
-    }
-];
-
-// ==============================|| DASHBOARD DEFAULT - TOTAL GROWTH BAR CHART ||============================== //
+interface ChartData {
+    name: string;
+    data: number[];
+}
 
 interface TotalGrowthBarChartProps {
     isLoading: boolean;
+    bookingData?: {
+        labels: string[];
+        series: {
+            name: string;
+            data: number[];
+        }[];
+    };
 }
 
-const TotalGrowthBarChart = ({ isLoading }: TotalGrowthBarChartProps) => {
-    const [value, setValue] = React.useState('today');
+const TotalGrowthBarChart = ({ isLoading, bookingData }: TotalGrowthBarChartProps) => {
     const theme = useTheme();
-    const { mode } = useConfig();
+    const mode = theme.palette.mode;
 
     const { primary } = theme.palette.text;
     const darkLight = theme.palette.dark.light;
-    const divider = theme.palette.divider;
-    const grey500 = theme.palette.grey[500];
+    const grey200 = theme.palette.grey[200];
 
     const primary200 = theme.palette.primary[200];
     const primaryDark = theme.palette.primary.dark;
     const secondaryMain = theme.palette.secondary.main;
     const secondaryLight = theme.palette.secondary.light;
 
-    React.useEffect(() => {
-        const newChartData = {
-            ...chartData.options,
-            colors: [primary200, primaryDark, secondaryMain, secondaryLight],
+    const defaultChartData = {
+        height: 480,
+        type: 'bar' as const,
+        options: {
+            chart: {
+                id: 'bar-chart',
+                stacked: true,
+                toolbar: {
+                    show: true
+                },
+                zoom: {
+                    enabled: true
+                }
+            },
+            responsive: [
+                {
+                    breakpoint: 480,
+                    options: {
+                        legend: {
+                            position: 'bottom' as const,
+                            offsetX: -10,
+                            offsetY: 0
+                        }
+                    }
+                }
+            ],
+            plotOptions: {
+                bar: {
+                    horizontal: false,
+                    columnWidth: '50%'
+                }
+            },
             xaxis: {
+                type: 'category' as const,
+                categories: bookingData?.labels || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
                 labels: {
                     style: {
-                        colors: [primary, primary, primary, primary, primary, primary, primary, primary, primary, primary, primary, primary]
+                        colors: [
+                            primary,
+                            primary,
+                            primary,
+                            primary,
+                            primary,
+                            primary,
+                            primary,
+                            primary,
+                            primary,
+                            primary,
+                            primary,
+                            primary
+                        ]
                     }
                 }
             },
@@ -77,67 +107,60 @@ const TotalGrowthBarChart = ({ isLoading }: TotalGrowthBarChartProps) => {
                     }
                 }
             },
-            grid: { borderColor: divider },
-            tooltip: { theme: mode },
-            legend: { labels: { colors: grey500 } }
-        };
+            grid: {
+                borderColor: mode === ThemeMode.DARK ? darkLight : grey200
+            },
+            tooltip: {
+                theme: mode === ThemeMode.DARK ? 'dark' : 'light'
+            },
+            legend: {
+                position: 'right' as const,
+                offsetY: 40,
+                labels: {
+                    colors: primary
+                }
+            },
+            fill: {
+                opacity: 1
+            }
+        },
+        series: bookingData?.series || [
+            {
+                name: 'Completed',
+                data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            },
+            {
+                name: 'Pending',
+                data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            },
+            {
+                name: 'Cancelled',
+                data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            }
+        ]
+    };
 
-        // do not load chart when loading
-        if (!isLoading) {
-            ApexCharts.exec(`bar-chart`, 'updateOptions', newChartData);
-        }
-    }, [mode, primary200, primaryDark, secondaryMain, secondaryLight, primary, darkLight, divider, isLoading, grey500]);
+    const [chartData] = useState(defaultChartData);
+
+    if (isLoading) {
+        return <SkeletonTotalGrowthBarChart />;
+    }
 
     return (
-        <>
-            {isLoading ? (
-                <SkeletonTotalGrowthBarChart />
-            ) : (
-                <MainCard>
-                    <Grid container spacing={gridSpacing}>
-                        <Grid item xs={12}>
-                            <Grid container alignItems="center" justifyContent="space-between">
-                                <Grid item>
-                                    <Grid container direction="column" spacing={1}>
-                                        <Grid item>
-                                            <Typography variant="subtitle2">Total Growth</Typography>
-                                        </Grid>
-                                        <Grid item>
-                                            <Typography variant="h3">$2,324.00</Typography>
-                                        </Grid>
-                                    </Grid>
-                                </Grid>
-                                <Grid item>
-                                    <TextField
-                                        id="standard-select-currency"
-                                        select
-                                        value={value}
-                                        onChange={(e) => setValue(e.target.value)}
-                                    >
-                                        {status.map((option) => (
-                                            <MenuItem key={option.value} value={option.value}>
-                                                {option.label}
-                                            </MenuItem>
-                                        ))}
-                                    </TextField>
-                                </Grid>
-                            </Grid>
-                        </Grid>
-                        <Grid
-                            item
-                            xs={12}
-                            sx={{
-                                '& .apexcharts-menu.apexcharts-menu-open': {
-                                    bgcolor: mode === ThemeMode.DARK ? 'background.default' : 'background.paper'
-                                }
-                            }}
-                        >
-                            <Chart {...chartData} />
+        <MainCard>
+            <Grid container spacing={gridSpacing}>
+                <Grid item xs={12}>
+                    <Grid container alignItems="center" justifyContent="space-between">
+                        <Grid item>
+                            <Typography variant="h3">Booking Trends</Typography>
                         </Grid>
                     </Grid>
-                </MainCard>
-            )}
-        </>
+                </Grid>
+                <Grid item xs={12}>
+                    <Chart {...chartData} />
+                </Grid>
+            </Grid>
+        </MainCard>
     );
 };
 

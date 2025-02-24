@@ -11,6 +11,7 @@ import accountReducer from 'store/accountReducer';
 // project imports
 import Loader from 'ui-component/Loader';
 import axios from 'utils/axios';
+import { login as apiLogin, getCurrentUser } from 'api/auth';
 
 // types
 import { KeyedObject } from 'types';
@@ -29,11 +30,13 @@ const verifyToken: (st: string) => boolean = (serviceToken) => {
     if (!serviceToken) {
         return false;
     }
-    const decoded: KeyedObject = jwtDecode(serviceToken);
-    /**
-     * Property 'exp' does not exist on type '<T = unknown>(token: string, options?: JwtDecodeOptions | undefined) => T'.
-     */
-    return decoded.exp > Date.now() / 1000;
+    try {
+        const decoded: KeyedObject = jwtDecode(serviceToken);
+        return decoded.exp > Date.now() / 1000;
+    } catch (error) {
+        console.error('Token verification error:', error);
+        return false;
+    }
 };
 
 const setSession = (serviceToken?: string | null) => {
@@ -58,7 +61,7 @@ export const JWTProvider = ({ children }: { children: React.ReactElement }) => {
                 const serviceToken = window.localStorage.getItem('serviceToken');
                 if (serviceToken && verifyToken(serviceToken)) {
                     setSession(serviceToken);
-                    const response = await axios.get('/api/account/me');
+                    const response = await getCurrentUser();
                     const { user } = response.data;
                     dispatch({
                         type: LOGIN,
@@ -73,7 +76,7 @@ export const JWTProvider = ({ children }: { children: React.ReactElement }) => {
                     });
                 }
             } catch (err) {
-                console.error(err);
+                console.error('Auth initialization error:', err);
                 dispatch({
                     type: LOGOUT
                 });
@@ -84,22 +87,27 @@ export const JWTProvider = ({ children }: { children: React.ReactElement }) => {
     }, []);
 
     const login = async (email: string, password: string) => {
-        const response = await axios.post('/api/account/login', { email, password });
-        const { serviceToken, user } = response.data;
-        setSession(serviceToken);
-        dispatch({
-            type: LOGIN,
-            payload: {
-                isLoggedIn: true,
-                user
-            }
-        });
+        try {
+            const response = await apiLogin({ email, password });
+            const { token, user } = response.data;
+            setSession(token);
+            dispatch({
+                type: LOGIN,
+                payload: {
+                    isLoggedIn: true,
+                    user
+                }
+            });
+        } catch (error) {
+            console.error('Login error:', error);
+            throw error;
+        }
     };
 
     const register = async (email: string, password: string, firstName: string, lastName: string) => {
         // todo: this flow need to be recode as it not verified
         const id = chance.bb_pin();
-        const response = await axios.post('/api/account/register', {
+        const response = await axios.post('/api/auth/register', {
             id,
             email,
             password,
