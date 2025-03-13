@@ -13,9 +13,9 @@ const initialState: MenuProps = {
 };
 
 export const endpoints = {
-    key: 'api/menu',
+    key: 'menu',
     master: 'master',
-    widget: '/widget' // server URL
+    widget: '/widget'
 };
 
 export function useGetMenu() {

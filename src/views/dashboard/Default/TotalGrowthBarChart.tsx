@@ -105,13 +105,19 @@ const TotalGrowthBarChart = ({ isLoading, bookingData }: TotalGrowthBarChartProp
                     style: {
                         colors: [primary]
                     }
+                },
+                title: {
+                    text: 'Number of Bookings'
                 }
             },
             grid: {
                 borderColor: mode === ThemeMode.DARK ? darkLight : grey200
             },
             tooltip: {
-                theme: mode === ThemeMode.DARK ? 'dark' : 'light'
+                theme: mode === ThemeMode.DARK ? 'dark' : 'light',
+                y: {
+                    formatter: (value: number) => `${value} booking${value !== 1 ? 's' : ''}`
+                }
             },
             legend: {
                 position: 'right' as const,
@@ -121,7 +127,8 @@ const TotalGrowthBarChart = ({ isLoading, bookingData }: TotalGrowthBarChartProp
                 }
             },
             fill: {
-                opacity: 1
+                opacity: 1,
+                colors: [theme.palette.success.main, theme.palette.warning.main, theme.palette.error.main]
             }
         },
         series: bookingData?.series || [

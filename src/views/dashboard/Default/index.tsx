@@ -35,24 +35,63 @@ const Dashboard = () => {
         error
     } = useDashboardData();
 
+    console.log('Dashboard Data:', {
+        totalBookings,
+        completedBookings,
+        pendingBookings,
+        cancelledBookings,
+        recentBookings
+    });
+
     // Prepare data for the bar chart
     const bookingData = {
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
         series: [
             {
                 name: 'Completed',
-                data: Array(12).fill(completedBookings / 12)
+                data: Array(12).fill(0)
             },
             {
                 name: 'Pending',
-                data: Array(12).fill(pendingBookings / 12)
+                data: Array(12).fill(0)
             },
             {
                 name: 'Cancelled',
-                data: Array(12).fill(cancelledBookings / 12)
+                data: Array(12).fill(0)
             }
         ]
     };
+
+    // Process bookings into monthly data
+    if (recentBookings && recentBookings.length > 0) {
+        console.log('Processing bookings for chart:', recentBookings);
+        
+        recentBookings.forEach(booking => {
+            const date = new Date(booking.pickupDate);
+            const month = date.getMonth(); // 0-based index (0 = January)
+            const status = booking.status.toLowerCase();
+            
+            console.log('Processing booking:', {
+                date: date.toISOString(),
+                month,
+                status,
+                pickupDate: booking.pickupDate
+            });
+            
+            // Increment the appropriate counter based on status and month
+            if (status === 'completed') {
+                bookingData.series[0].data[month]++;
+            } else if (status === 'pending') {
+                bookingData.series[1].data[month]++;
+            } else if (status === 'cancelled') {
+                bookingData.series[2].data[month]++;
+            }
+        });
+
+        console.log('Final chart data:', bookingData);
+    } else {
+        console.log('No bookings available for chart');
+    }
 
     if (error) {
         return (
